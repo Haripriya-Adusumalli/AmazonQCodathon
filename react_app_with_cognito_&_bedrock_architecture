@@ -1,0 +1,39 @@
+digraph "React App with Cognito & Bedrock Architecture" {
+	graph [fontcolor="#2D3436" fontname="Sans-Serif" fontsize=15 label="React App with Cognito & Bedrock Architecture" nodesep=0.60 pad=2.0 rankdir=TB ranksep=0.75 splines=ortho]
+	node [fixedsize=true fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13 height=1.4 imagescale=true labelloc=b shape=box style=rounded width=1.4]
+	edge [color="#7B8894"]
+	bde3c8730e9a421a8d7a79fef65808db [label=Users height=1.9 image="C:\Users\haripriya.adusumalli\AppData\Local\Programs\Python\Python312\Lib\site-packages\resources/onprem/client\users.png" shape=none]
+	subgraph cluster_Frontend {
+		graph [bgcolor="#E5F5FD" fontname="Sans-Serif" fontsize=12 label=Frontend labeljust=l pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		aa0e3ecc0a024da0976a291760407fcb [label="React App
+(Cognito Auth)" height=2.3 image="C:\Users\haripriya.adusumalli\AppData\Local\Programs\Python\Python312\Lib\site-packages\resources/programming/framework\react.png" shape=none]
+		"975b24b73cd14c59995cbb4a2c78aeb7" [label="CloudFront CDN" height=1.9 image="C:\Users\haripriya.adusumalli\AppData\Local\Programs\Python\Python312\Lib\site-packages\resources/aws/network\cloudfront.png" shape=none]
+		"4bf7ffa9766a414d9ee7b078a7486ee1" [label="S3 Static Hosting" height=1.9 image="C:\Users\haripriya.adusumalli\AppData\Local\Programs\Python\Python312\Lib\site-packages\resources/aws/storage\simple-storage-service-s3.png" shape=none]
+	}
+	subgraph cluster_Authentication {
+		graph [bgcolor="#E5F5FD" fontname="Sans-Serif" fontsize=12 label=Authentication labeljust=l pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"82608c26a1994b259623423245589d58" [label="Cognito User Pool
+us-east-1_liYtIs82R" height=2.3 image="C:\Users\haripriya.adusumalli\AppData\Local\Programs\Python\Python312\Lib\site-packages\resources/aws/security\cognito.png" shape=none]
+		db55415438644deabbf884247f8da239 [label="IAM Role
+Cognito_WeatherAppAuth_Role" height=2.3 image="C:\Users\haripriya.adusumalli\AppData\Local\Programs\Python\Python312\Lib\site-packages\resources/aws/security\identity-and-access-management-iam.png" shape=none]
+	}
+	subgraph "cluster_AI Services" {
+		graph [bgcolor="#E5F5FD" fontname="Sans-Serif" fontsize=12 label="AI Services" labeljust=l pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		f097a7112b52469e8d3cd5f2d70a5e62 [label="Bedrock Agent
+Weather Assistant" height=2.3 image="C:\Users\haripriya.adusumalli\AppData\Local\Programs\Python\Python312\Lib\site-packages\resources/aws/ml\bedrock.png" shape=none]
+		"2b119c17f19649f79ee799b4453bd5be" [label="Lambda Function
+Weather API" height=2.3 image="C:\Users\haripriya.adusumalli\AppData\Local\Programs\Python\Python312\Lib\site-packages\resources/aws/compute\lambda.png" shape=none]
+	}
+	"1680f5d892784f1792e1e6477e875c38" [label="OpenWeatherMap API" height=1.9 image="C:\Users\haripriya.adusumalli\AppData\Local\Programs\Python\Python312\Lib\site-packages\resources/saas/analytics\snowflake.png" shape=none]
+	bde3c8730e9a421a8d7a79fef65808db -> "975b24b73cd14c59995cbb4a2c78aeb7" [label="1. Access App" dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"975b24b73cd14c59995cbb4a2c78aeb7" -> "4bf7ffa9766a414d9ee7b078a7486ee1" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"4bf7ffa9766a414d9ee7b078a7486ee1" -> aa0e3ecc0a024da0976a291760407fcb [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	aa0e3ecc0a024da0976a291760407fcb -> "82608c26a1994b259623423245589d58" [label="2. Sign In/Up" dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"82608c26a1994b259623423245589d58" -> db55415438644deabbf884247f8da239 [label="3. Assume Role" dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	aa0e3ecc0a024da0976a291760407fcb -> f097a7112b52469e8d3cd5f2d70a5e62 [label="4. Weather Query" dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	f097a7112b52469e8d3cd5f2d70a5e62 -> "2b119c17f19649f79ee799b4453bd5be" [label="5. Invoke Function" dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"2b119c17f19649f79ee799b4453bd5be" -> "1680f5d892784f1792e1e6477e875c38" [label="6. Fetch Weather" dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"1680f5d892784f1792e1e6477e875c38" -> "2b119c17f19649f79ee799b4453bd5be" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"2b119c17f19649f79ee799b4453bd5be" -> f097a7112b52469e8d3cd5f2d70a5e62 [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	f097a7112b52469e8d3cd5f2d70a5e62 -> aa0e3ecc0a024da0976a291760407fcb [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+}

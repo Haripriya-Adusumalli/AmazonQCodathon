@@ -1,0 +1,54 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Weather API",
+    "version": "1.0.0",
+    "description": "API to get current weather data for cities"
+  },
+  "paths": {
+    "/weather": {
+      "post": {
+        "summary": "Get current weather for a city",
+        "description": "Returns current weather information including temperature, humidity, and conditions for the specified city",
+        "operationId": "getCurrentWeather",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string",
+                    "description": "Name of the city to get weather for"
+                  }
+                },
+                "required": ["city"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Weather data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "city": {"type": "string"},
+                    "country": {"type": "string"},
+                    "temperature": {"type": "number"},
+                    "description": {"type": "string"},
+                    "humidity": {"type": "number"},
+                    "wind_speed": {"type": "number"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
