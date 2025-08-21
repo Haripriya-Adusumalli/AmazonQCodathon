@@ -2,7 +2,7 @@ import { Amplify } from 'aws-amplify';
 import { Authenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import { awsConfig } from './aws-config';
-import Dashboard from './Dashboard';
+import ProductDashboard from './ProductDashboard';
 import './App.css';
 
 // Configure Amplify with Identity Pool
@@ -22,7 +22,7 @@ function App() {
     <div className="app">
       <Authenticator>
         {({ signOut, user }) => (
-          <Dashboard user={user} onLogout={signOut} />
+          <ProductDashboard user={user} onLogout={signOut} />
         )}
       </Authenticator>
     </div>
