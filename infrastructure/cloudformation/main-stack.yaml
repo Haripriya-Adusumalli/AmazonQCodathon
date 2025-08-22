@@ -1,0 +1,331 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Product Opportunity Recommendation System - Complete Infrastructure'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: 'product-opportunity-system'
+  Environment:
+    Type: String
+    Default: 'dev'
+    AllowedValues: [dev, staging, prod]
+  WeatherApiKey:
+    Type: String
+    NoEcho: true
+    Description: 'OpenWeatherMap API Key'
+
+Resources:
+  # Cognito User Pool
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub '${ProjectName}-${Environment}-users'
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub '${ProjectName}-${Environment}-client'
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+
+  IdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: !Sub '${ProjectName}-${Environment}-identity'
+      AllowUnauthenticatedIdentities: false
+      CognitoIdentityProviders:
+        - ClientId: !Ref UserPoolClient
+          ProviderName: !GetAtt UserPool.ProviderName
+
+  # IAM Roles
+  CognitoAuthenticatedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud': !Ref IdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': authenticated
+      Policies:
+        - PolicyName: BedrockAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeAgent
+                  - bedrock:InvokeModel
+                Resource: '*'
+
+  IdentityPoolRoleAttachment:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId: !Ref IdentityPool
+      Roles:
+        authenticated: !GetAtt CognitoAuthenticatedRole.Arn
+
+  # Lambda Execution Role
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: BedrockAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:ListFoundationModels
+                Resource: '*'
+
+  # Bedrock Agent Role
+  BedrockAgentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: bedrock.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: BedrockAgentPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - lambda:InvokeFunction
+                Resource: '*'
+
+  # Lambda Functions
+  WeatherFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${ProjectName}-${Environment}-weather'
+      Runtime: python3.9
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          WEATHER_API_KEY: !Ref WeatherApiKey
+      Code:
+        ZipFile: |
+          import json
+          import requests
+          import os
+          
+          def lambda_handler(event, context):
+              city = event.get('inputText', '').strip()
+              if not city:
+                  return {'statusCode': 400, 'body': json.dumps({'error': 'City required'})}
+              
+              api_key = os.environ.get('WEATHER_API_KEY')
+              if not api_key:
+                  return {'statusCode': 500, 'body': json.dumps({'error': 'API key not configured'})}
+              
+              try:
+                  url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+                  response = requests.get(url)
+                  
+                  if response.status_code == 200:
+                      data = response.json()
+                      weather_info = {
+                          'city': data['name'],
+                          'temperature': data['main']['temp'],
+                          'description': data['weather'][0]['description'],
+                          'humidity': data['main']['humidity']
+                      }
+                      return {'statusCode': 200, 'body': json.dumps(weather_info)}
+                  else:
+                      return {'statusCode': 404, 'body': json.dumps({'error': f'Weather data not found for {city}'})}
+              except Exception as e:
+                  return {'statusCode': 500, 'body': json.dumps({'error': str(e)})}
+
+  MarketDemandFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${ProjectName}-${Environment}-market-demand'
+      Runtime: python3.9
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          
+          def lambda_handler(event, context):
+              try:
+                  query = event.get('query', event.get('inputText', 'product'))
+                  
+                  current_interest = min(100, len(query) * 3 + hash(query) % 30)
+                  momentum = 1.0 + (hash(query) % 50) / 100
+                  news_volume = min(50, len(query) * 2)
+                  demand_score = min(100, (current_interest * 0.6 + momentum * 20 + news_volume * 0.2))
+                  
+                  result = {
+                      'demand_score': round(demand_score, 2),
+                      'current_interest': round(current_interest, 2),
+                      'momentum': round(momentum, 2),
+                      'trending_topics': [f"{query} reviews", f"best {query}", f"{query} alternatives"],
+                      'news_volume': news_volume
+                  }
+                  
+                  return {'statusCode': 200, 'body': json.dumps(result)}
+              except Exception as e:
+                  return {'statusCode': 500, 'body': json.dumps({'error': str(e)})}
+
+  CompetitorScanFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${ProjectName}-${Environment}-competitor-scan'
+      Runtime: python3.9
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          
+          def lambda_handler(event, context):
+              try:
+                  query = event.get('query', event.get('inputText', 'product'))
+                  
+                  total_products = abs(hash(query)) % 500 + 100
+                  avg_rating = 3.5 + (hash(query) % 15) / 10
+                  
+                  result = {
+                      'competition_score': min(100, total_products / 10 + avg_rating * 5),
+                      'total_products': total_products,
+                      'avg_rating': round(avg_rating, 1),
+                      'price_range': {'low': 25, 'high': 150},
+                      'top_competitors': ['CompetitorA', 'CompetitorB'],
+                      'market_saturation': 'Medium'
+                  }
+                  
+                  return {'statusCode': 200, 'body': json.dumps(result)}
+              except Exception as e:
+                  return {'statusCode': 500, 'body': json.dumps({'error': str(e)})}
+
+  CapabilityMatchFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${ProjectName}-${Environment}-capability-match'
+      Runtime: python3.9
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          
+          def lambda_handler(event, context):
+              try:
+                  result = {
+                      'capability_score': 70.0,
+                      'skill_matches': ['product_design', 'manufacturing'],
+                      'skill_gaps': ['specialized_expertise'],
+                      'supplier_readiness': 'Medium',
+                      'time_to_market': '6-12 months',
+                      'recommended_actions': ['Conduct feasibility study']
+                  }
+                  
+                  return {'statusCode': 200, 'body': json.dumps(result)}
+              except Exception as e:
+                  return {'statusCode': 500, 'body': json.dumps({'error': str(e)})}
+
+  # Lambda Permissions for Bedrock
+  WeatherFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WeatherFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+
+  MarketDemandFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref MarketDemandFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+
+  CompetitorScanFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CompetitorScanFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+
+  CapabilityMatchFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CapabilityMatchFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+
+Outputs:
+  UserPoolId:
+    Description: 'Cognito User Pool ID'
+    Value: !Ref UserPool
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-UserPoolId'
+
+  UserPoolClientId:
+    Description: 'Cognito User Pool Client ID'
+    Value: !Ref UserPoolClient
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-UserPoolClientId'
+
+  IdentityPoolId:
+    Description: 'Cognito Identity Pool ID'
+    Value: !Ref IdentityPool
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-IdentityPoolId'
+
+  WeatherFunctionArn:
+    Description: 'Weather Lambda Function ARN'
+    Value: !GetAtt WeatherFunction.Arn
+
+  MarketDemandFunctionArn:
+    Description: 'Market Demand Lambda Function ARN'
+    Value: !GetAtt MarketDemandFunction.Arn
+
+  CompetitorScanFunctionArn:
+    Description: 'Competitor Scan Lambda Function ARN'
+    Value: !GetAtt CompetitorScanFunction.Arn
+
+  CapabilityMatchFunctionArn:
+    Description: 'Capability Match Lambda Function ARN'
+    Value: !GetAtt CapabilityMatchFunction.Arn
+
+  BedrockAgentRoleArn:
+    Description: 'Bedrock Agent Role ARN'
+    Value: !GetAtt BedrockAgentRole.Arn

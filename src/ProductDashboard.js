@@ -8,7 +8,7 @@ function ProductDashboard({ user, onLogout }) {
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h1>Welcome back, {user?.username || user?.signInDetails?.loginId}! 👋</h1>
+        <h1>Welcome back, {user?.signInDetails?.loginId?.split('@')[0] || user?.username || 'User'}! 👋</h1>
         <button className="logout-btn" onClick={onLogout}>Sign Out</button>
       </div>
       
@@ -18,6 +18,12 @@ function ProductDashboard({ user, onLogout }) {
           onClick={() => setActiveTab('opportunity')}
         >
           🎯 Product Opportunities
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'enhanced' ? 'active' : ''}`}
+          onClick={() => setActiveTab('enhanced')}
+        >
+          🚀 Enhanced Analysis
         </button>
         <button 
           className={`tab-btn ${activeTab === 'weather' ? 'active' : ''}`}
@@ -32,6 +38,13 @@ function ProductDashboard({ user, onLogout }) {
           <div>
             <p>Discover high-potential product opportunities with AI-powered market analysis.</p>
             <ProductOpportunityChat />
+          </div>
+        )}
+        
+        {activeTab === 'enhanced' && (
+          <div>
+            <p>Advanced product opportunity analysis with real API integration and comprehensive insights.</p>
+            <ProductOpportunityChat enhanced={true} />
           </div>
         )}
         

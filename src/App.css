@@ -12,6 +12,40 @@
 [data-amplify-authenticator] {
   --amplify-components-authenticator-router-background-color: transparent;
   --amplify-components-authenticator-router-border: none;
+  --amplify-components-fieldcontrol-color: #333;
+  --amplify-components-field-color: #333;
+  --amplify-components-textfield-color: #333;
+  --amplify-components-input-color: #333;
+  --amplify-components-authenticator-form-padding: 2rem;
+}
+
+[data-amplify-authenticator] input {
+  color: #333 !important;
+  background-color: white !important;
+}
+
+[data-amplify-authenticator] input::placeholder {
+  color: #666 !important;
+}
+
+[data-amplify-authenticator] label {
+  color: #333 !important;
+}
+
+[data-amplify-authenticator] button {
+  color: #333 !important;
+}
+
+[data-amplify-authenticator] [data-amplify-router-content] button {
+  color: #333 !important;
+}
+
+[data-amplify-authenticator] [role="tablist"] button {
+  color: #333 !important;
+}
+
+[data-amplify-authenticator] [role="tab"] {
+  color: #333 !important;
 }
 
 .login-container {

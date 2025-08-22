@@ -1,0 +1,268 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Bedrock Agents for Product Opportunity System'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: 'product-opportunity-system'
+  Environment:
+    Type: String
+    Default: 'dev'
+  BedrockAgentRoleArn:
+    Type: String
+    Description: 'ARN of the Bedrock Agent Role from main stack'
+  WeatherFunctionArn:
+    Type: String
+    Description: 'ARN of the Weather Lambda Function'
+  MarketDemandFunctionArn:
+    Type: String
+    Description: 'ARN of the Market Demand Lambda Function'
+  CompetitorScanFunctionArn:
+    Type: String
+    Description: 'ARN of the Competitor Scan Lambda Function'
+  CapabilityMatchFunctionArn:
+    Type: String
+    Description: 'ARN of the Capability Match Lambda Function'
+
+Resources:
+  # Weather Agent
+  WeatherAgent:
+    Type: AWS::Bedrock::Agent
+    Properties:
+      AgentName: !Sub '${ProjectName}-${Environment}-weather-agent'
+      AgentResourceRoleArn: !Ref BedrockAgentRoleArn
+      FoundationModel: 'anthropic.claude-3-haiku-20240307-v1:0'
+      Instruction: |
+        You are a helpful weather assistant. You can provide current weather information for cities around the world.
+        When users ask about weather, use the get_weather function to retrieve current conditions.
+        Provide clear, friendly responses about temperature, conditions, and other weather details.
+      ActionGroups:
+        - ActionGroupName: 'weather-actions'
+          ActionGroupExecutor:
+            Lambda: !Ref WeatherFunctionArn
+          ApiSchema:
+            Payload: |
+              {
+                "openapi": "3.0.0",
+                "info": {
+                  "title": "Weather API",
+                  "version": "1.0.0"
+                },
+                "paths": {
+                  "/weather": {
+                    "post": {
+                      "summary": "Get current weather for a city",
+                      "operationId": "get_weather",
+                      "requestBody": {
+                        "required": true,
+                        "content": {
+                          "application/json": {
+                            "schema": {
+                              "type": "object",
+                              "properties": {
+                                "city": {
+                                  "type": "string",
+                                  "description": "City name"
+                                }
+                              },
+                              "required": ["city"]
+                            }
+                          }
+                        }
+                      },
+                      "responses": {
+                        "200": {
+                          "description": "Weather information",
+                          "content": {
+                            "application/json": {
+                              "schema": {
+                                "type": "object",
+                                "properties": {
+                                  "city": {"type": "string"},
+                                  "temperature": {"type": "number"},
+                                  "description": {"type": "string"},
+                                  "humidity": {"type": "number"}
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+
+  WeatherAgentAlias:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentId: !Ref WeatherAgent
+      AgentAliasName: 'live'
+      Description: 'Live alias for weather agent'
+
+  # Product Opportunity Agent
+  ProductOpportunityAgent:
+    Type: AWS::Bedrock::Agent
+    Properties:
+      AgentName: !Sub '${ProjectName}-${Environment}-product-opportunity-agent'
+      AgentResourceRoleArn: !Ref BedrockAgentRoleArn
+      FoundationModel: 'anthropic.claude-3-haiku-20240307-v1:0'
+      Instruction: |
+        You are a Product Opportunity Analyzer that helps identify high-potential product opportunities using DCC (Demand + Competition + Capability) analysis.
+        
+        For each product opportunity query:
+        1. Use analyze_market_demand to assess market interest and trends
+        2. Use scan_competitors to evaluate competition levels
+        3. Use match_capabilities to assess internal readiness
+        4. Calculate DCC Score: (Demand × 0.45) + ((100 - Competition) × 0.30) + (Capability × 0.25)
+        5. Provide actionable recommendations based on the analysis
+        
+        Always provide specific, data-driven insights and clear next steps.
+      ActionGroups:
+        - ActionGroupName: 'market-analysis'
+          ActionGroupExecutor:
+            Lambda: !Ref MarketDemandFunctionArn
+          ApiSchema:
+            Payload: |
+              {
+                "openapi": "3.0.0",
+                "info": {
+                  "title": "Market Analysis API",
+                  "version": "1.0.0"
+                },
+                "paths": {
+                  "/analyze-demand": {
+                    "post": {
+                      "summary": "Analyze market demand for a product",
+                      "operationId": "analyze_market_demand",
+                      "requestBody": {
+                        "required": true,
+                        "content": {
+                          "application/json": {
+                            "schema": {
+                              "type": "object",
+                              "properties": {
+                                "query": {
+                                  "type": "string",
+                                  "description": "Product or market to analyze"
+                                },
+                                "region": {
+                                  "type": "string",
+                                  "description": "Geographic region"
+                                }
+                              },
+                              "required": ["query"]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+        - ActionGroupName: 'competitor-analysis'
+          ActionGroupExecutor:
+            Lambda: !Ref CompetitorScanFunctionArn
+          ApiSchema:
+            Payload: |
+              {
+                "openapi": "3.0.0",
+                "info": {
+                  "title": "Competitor Analysis API",
+                  "version": "1.0.0"
+                },
+                "paths": {
+                  "/scan-competitors": {
+                    "post": {
+                      "summary": "Scan competitors for a product category",
+                      "operationId": "scan_competitors",
+                      "requestBody": {
+                        "required": true,
+                        "content": {
+                          "application/json": {
+                            "schema": {
+                              "type": "object",
+                              "properties": {
+                                "query": {
+                                  "type": "string",
+                                  "description": "Product category to analyze"
+                                }
+                              },
+                              "required": ["query"]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+        - ActionGroupName: 'capability-analysis'
+          ActionGroupExecutor:
+            Lambda: !Ref CapabilityMatchFunctionArn
+          ApiSchema:
+            Payload: |
+              {
+                "openapi": "3.0.0",
+                "info": {
+                  "title": "Capability Analysis API",
+                  "version": "1.0.0"
+                },
+                "paths": {
+                  "/match-capabilities": {
+                    "post": {
+                      "summary": "Match internal capabilities to product requirements",
+                      "operationId": "match_capabilities",
+                      "requestBody": {
+                        "required": true,
+                        "content": {
+                          "application/json": {
+                            "schema": {
+                              "type": "object",
+                              "properties": {
+                                "query": {
+                                  "type": "string",
+                                  "description": "Product or opportunity to assess"
+                                }
+                              },
+                              "required": ["query"]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+
+  ProductOpportunityAgentAlias:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentId: !Ref ProductOpportunityAgent
+      AgentAliasName: 'live'
+      Description: 'Live alias for product opportunity agent'
+
+Outputs:
+  WeatherAgentId:
+    Description: 'Weather Agent ID'
+    Value: !Ref WeatherAgent
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-WeatherAgentId'
+
+  WeatherAgentAliasId:
+    Description: 'Weather Agent Alias ID'
+    Value: !Ref WeatherAgentAlias
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-WeatherAgentAliasId'
+
+  ProductOpportunityAgentId:
+    Description: 'Product Opportunity Agent ID'
+    Value: !Ref ProductOpportunityAgent
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-ProductOpportunityAgentId'
+
+  ProductOpportunityAgentAliasId:
+    Description: 'Product Opportunity Agent Alias ID'
+    Value: !Ref ProductOpportunityAgentAlias
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-ProductOpportunityAgentAliasId'

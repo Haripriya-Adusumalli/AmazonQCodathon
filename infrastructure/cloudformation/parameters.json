@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "product-opportunity-system"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  },
+  {
+    "ParameterKey": "WeatherApiKey",
+    "ParameterValue": "your-openweathermap-api-key-here"
+  }
+]

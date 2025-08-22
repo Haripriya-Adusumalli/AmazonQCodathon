@@ -17,6 +17,12 @@ export const bedrockConfig = {
 
 export const productOpportunityConfig = {
   agentId: 'DKPL7RP9OU',
-  aliasId: 'BIKYFE1L1K',
+  aliasId: 'NTC6Q4Y2BZ',
+  region: 'us-east-1'
+};
+
+export const enhancedProductOpportunityConfig = {
+  agentId: 'BKWEM7GZQX',
+  aliasId: 'JPWRQS8CI3',
   region: 'us-east-1'
 };

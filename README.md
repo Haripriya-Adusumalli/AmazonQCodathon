@@ -13,43 +13,26 @@ A comprehensive AI-powered React application that identifies high-potential prod
 
 ## Setup Instructions
 
-### 1. Install Dependencies
+### Quick Setup
+- **Windows**: Run `setup/setup.bat`
+- **Linux/macOS**: Run `setup/setup.sh`
+- **Manual**: Follow `setup/SETUP.md`
+
+### Verification
 ```bash
-npm install
+python setup/verify-setup.py
 ```
 
-### 2. Configure AWS Credentials
-```bash
-aws configure
-```
-
-### 3. Enable Bedrock Model Access
-1. Go to AWS Console > Amazon Bedrock
-2. Click "Model access" in left sidebar
-3. Click "Request model access"
-4. Select "Anthropic Claude 3 Haiku" and submit
-
-### 4. Deploy Bedrock Agents
-```bash
-# Deploy weather agent
-cd bedrock-agent
-python complete-deploy.py
-
-# Deploy product opportunity agent
-cd product-opportunity-agent
-python simple-deploy.py
-```
-
-### 5. Configure Application
-Update `src/aws-config.js` with your agent IDs from deployment outputs.
-
-### 6. Run the Application
-```bash
-npm start
-```
+For detailed instructions, see the [setup folder](setup/).
 
 ## Project Structure
 ```
+├── setup/                          # Setup and installation files
+│   ├── SETUP.md                    # Detailed setup guide
+│   ├── QUICKSTART.md               # 5-minute setup guide
+│   ├── setup.bat                   # Windows setup script
+│   ├── setup.sh                    # Linux/macOS setup script
+│   └── verify-setup.py             # Setup verification
 ├── src/
 │   ├── App.js                      # Main application
 │   ├── ProductDashboard.js         # Tabbed dashboard

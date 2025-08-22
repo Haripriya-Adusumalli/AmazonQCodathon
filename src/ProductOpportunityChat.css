@@ -15,6 +15,99 @@
   color: white;
 }
 
+.header-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.enhanced-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.logs-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+}
+
+.logs-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.logs-btn.active {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.trace-logs {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.trace-logs h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+}
+
+.logs-container {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #f8f9fa;
+}
+
+.log-entry {
+  border-bottom: 1px solid #e0e0e0;
+  padding: 10px;
+}
+
+.log-entry:last-child {
+  border-bottom: none;
+}
+
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.log-timestamp {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.log-type {
+  font-size: 0.7rem;
+  background: #007bff;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.log-content pre {
+  margin: 0;
+  font-size: 0.8rem;
+  background: white;
+  padding: 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
 .chat-header h3 {
   margin: 0;
   font-size: 1.5rem;

@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { BedrockAgentRuntimeClient, InvokeAgentCommand } from '@aws-sdk/client-bedrock-agent-runtime';
 import { fetchAuthSession } from 'aws-amplify/auth';
-import { productOpportunityConfig } from './aws-config';
+import { productOpportunityConfig, enhancedProductOpportunityConfig } from './aws-config';
 import './ProductOpportunityChat.css';
 
-const ProductOpportunityChat = () => {
+const ProductOpportunityChat = ({ enhanced = false }) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [analysisResults, setAnalysisResults] = useState(null);
+  const [showLogs, setShowLogs] = useState(false);
+  const [traceLogs, setTraceLogs] = useState([]);
 
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -38,23 +40,39 @@ const ProductOpportunityChat = () => {
       const currentSessionId = sessionId || `session-${Date.now()}`;
       if (!sessionId) setSessionId(currentSessionId);
 
+      const config = enhanced ? enhancedProductOpportunityConfig : productOpportunityConfig;
+      
       const command = new InvokeAgentCommand({
-        agentId: productOpportunityConfig.agentId,
-        agentAliasId: productOpportunityConfig.aliasId,
+        agentId: config.agentId,
+        agentAliasId: config.aliasId,
         sessionId: currentSessionId,
-        inputText: inputMessage
+        inputText: inputMessage,
+        enableTrace: enhanced
       });
 
       const response = await client.send(command);
       
       let assistantMessage = '';
+      const logs = [];
+      
       if (response.completion) {
         for await (const chunk of response.completion) {
           if (chunk.chunk?.bytes) {
             const text = new TextDecoder().decode(chunk.chunk.bytes);
             assistantMessage += text;
           }
+          if (enhanced && chunk.trace) {
+            logs.push({
+              timestamp: new Date().toISOString(),
+              type: Object.keys(chunk.trace)[0] || 'trace',
+              data: chunk.trace
+            });
+          }
         }
+      }
+      
+      if (enhanced) {
+        setTraceLogs(prev => [...prev, ...logs]);
       }
 
       // Parse analysis results if present
@@ -97,14 +115,51 @@ const ProductOpportunityChat = () => {
     setMessages([]);
     setSessionId(null);
     setAnalysisResults(null);
+    if (enhanced) {
+      setTraceLogs([]);
+    }
   };
 
   return (
     <div className="product-opportunity-chat">
       <div className="chat-header">
-        <h3>🎯 Product Opportunity Analyzer</h3>
-        <button onClick={clearChat} className="clear-btn">Clear Analysis</button>
+        <h3>{enhanced ? '🚀 Enhanced Product Analyzer' : '🎯 Product Opportunity Analyzer'}</h3>
+        <div className="header-info">
+          {enhanced && <span className="enhanced-badge">Real API Integration</span>}
+          {enhanced && (
+            <button 
+              onClick={() => setShowLogs(!showLogs)} 
+              className={`logs-btn ${showLogs ? 'active' : ''}`}
+            >
+              {showLogs ? 'Hide Logs' : 'Show Logs'}
+            </button>
+          )}
+          <button onClick={clearChat} className="clear-btn">Clear Analysis</button>
+        </div>
       </div>
+      
+      {showLogs && enhanced && (
+        <div className="trace-logs">
+          <h4>🔍 Trace Logs</h4>
+          <div className="logs-container">
+            {traceLogs.length === 0 ? (
+              <p>No trace logs available. Logs will appear here during agent execution.</p>
+            ) : (
+              traceLogs.map((log, index) => (
+                <div key={index} className="log-entry">
+                  <div className="log-header">
+                    <span className="log-timestamp">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                    <span className="log-type">{log.type}</span>
+                  </div>
+                  <div className="log-content">
+                    <pre>{JSON.stringify(log.data, null, 2)}</pre>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
       
       {analysisResults && (
         <div className="analysis-dashboard">
@@ -133,7 +188,7 @@ const ProductOpportunityChat = () => {
       <div className="chat-messages">
         {messages.length === 0 && (
           <div className="welcome-message">
-            <p>🎯 Welcome to the Product Opportunity Analyzer!</p>
+            <p>{enhanced ? '🚀 Welcome to the Enhanced Product Analyzer!' : '🎯 Welcome to the Product Opportunity Analyzer!'}</p>
             <div className="example-questions">
               <p>Try asking:</p>
               <ul>
@@ -161,7 +216,7 @@ const ProductOpportunityChat = () => {
                 <span></span>
                 <span></span>
               </div>
-              <p>Analyzing market demand, competition, and capabilities...</p>
+              <p>{enhanced ? 'Running enhanced analysis with real market data...' : 'Analyzing market demand, competition, and capabilities...'}</p>
             </div>
           </div>
         )}

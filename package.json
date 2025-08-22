@@ -1,18 +1,31 @@
 {
-  "name": "sample-react-app",
-  "version": "1.0.0",
+  "name": "product-opportunity-recommendation-system",
+  "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@aws-amplify/ui-react": "^6.11.2",
-    "@aws-sdk/client-bedrock-agent-runtime": "^3.864.0",
-    "aws-amplify": "^6.15.5",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-scripts": "5.0.1"
+    "@aws-amplify/ui-react": "^6.1.13",
+    "@aws-sdk/client-bedrock-agent-runtime": "^3.645.0",
+    "aws-amplify": "^6.5.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-scripts": "5.0.1",
+    "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build"
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "test:coverage": "react-scripts test --coverage --watchAll=false",
+    "test:chatbots": "react-scripts test --testPathPattern=chatbot-integration.test.js --watchAll=false",
+    "test:backend": "react-scripts test --testPathPattern=backend-integration.test.js --watchAll=false",
+    "test:lambda": "react-scripts test --testPathPattern=lambda-functions.test.js --watchAll=false",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
   },
   "browserslist": {
     "production": [
@@ -25,5 +38,25 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx}",
+      "!src/index.js",
+      "!src/reportWebVitals.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    }
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1"
   }
 }
