@@ -53,3 +53,7 @@ weather-function.zip
 
 # Agent info (contains IDs)
 bedrock-agent/agent-info.json
+
+# Large files
+*.zip
+enhanced-layer.zip
